@@ -10,14 +10,17 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { MOCK_MOVIES, CATEGORIES } from "../data/mockData";
-import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
+import { useSelector } from "react-redux";
+import { CATEGORIES } from "../data/mockData";
+import { COLORS, SPACING } from "../theme/theme";
 
 const SearchScreen = ({ navigation }) => {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  const filteredMovies = MOCK_MOVIES.filter((movie) => {
+  const { items: movies } = useSelector((state) => state.movies);
+
+  const filteredMovies = (movies || []).filter((movie) => {
     const matchesQuery = movie.title
       .toLowerCase()
       .includes(query.toLowerCase());

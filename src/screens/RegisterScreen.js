@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useAuth } from "../context/AuthContext";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser } from "../features/auth/authSlice";
 import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,11 +20,19 @@ const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [image, setImage] = useState(null);
-  const { register, loading } = useAuth();
+
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (error) {
+      alert(error);
+    }
+  }, [error]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.IMAGES,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -34,10 +43,35 @@ const RegisterScreen = ({ navigation }) => {
     }
   };
 
+  const takePhoto = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
+      if (permissionResult.status !== "granted") {
+        alert("Se necesitan permisos para usar la cámara.");
+        return;
+      }
+
+      let result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error taking photo: ", error);
+      alert("Error: " + error.message);
+    }
+  };
+
   const handleRegister = async () => {
     if (!name || !email || !password)
       return alert("Por favor llena todos los campos");
-    await register(name, email, password, image);
+    dispatch(registerUser({ name, email, password, photoURL: image }));
   };
 
   return (
@@ -47,20 +81,37 @@ const RegisterScreen = ({ navigation }) => {
         Únete a la comunidad cinéfila
       </Text>
 
-      <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.avatar} />
-        ) : (
-          <View style={styles.placeholder}>
-            <Ionicons
-              name="camera-outline"
-              color={COLORS.textSecondary}
-              size={32}
-            />
-            <Text style={styles.placeholderText}>Foto de perfil</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      <View style={{ alignItems: "center", marginBottom: SPACING.xl }}>
+        <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+          {image ? (
+            <Image source={{ uri: image }} style={styles.avatar} />
+          ) : (
+            <View style={styles.placeholder}>
+              <Ionicons
+                name="camera-outline"
+                color={COLORS.textSecondary}
+                size={32}
+              />
+              <Text style={styles.placeholderText}>Galería</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={takePhoto}
+          style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}
+        >
+          <Ionicons
+            name="camera"
+            size={20}
+            color={COLORS.primary}
+            style={{ marginRight: 5 }}
+          />
+          <Text style={{ color: COLORS.primary, fontWeight: "bold" }}>
+            Tomar Foto
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <TextInput
         style={styles.input}
@@ -107,12 +158,6 @@ const RegisterScreen = ({ navigation }) => {
           <Text style={{ color: COLORS.active }}>Inicia sesión</Text>
         </Text>
       </TouchableOpacity>
-
-      {/* Comentario para el futuro:
-          1. Subir imagen a Firebase Storage.
-          2. Obtener URL.
-          3. Guardar usuario en Firestore con la URL obtenida.
-      */}
     </ScrollView>
   );
 };

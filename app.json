@@ -13,17 +13,45 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jorge.movieWiki"
     },
     "android": {
+      "package": "com.jorge.movieWiki",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permite acceso a tus fotos para actualizar tu perfil.",
+          "cameraPermission": "Permite acceso a tu cámara para tomar tu foto de perfil."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permite acceso a tu ubicación para mostrar cines cercanos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a59734a4-2551-4860-b045-ef3968353e24"
+      }
     }
   }
 }

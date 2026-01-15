@@ -1,52 +1,149 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
+  Image,
   ScrollView,
+  Alert,
 } from "react-native";
-import { useAuth } from "../context/AuthContext";
-import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { COLORS, TYPOGRAPHY, SPACING } from "../theme/theme";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser, updateUserProfile } from "../features/auth/authSlice";
+import * as ImagePicker from "expo-image-picker";
 
 const ProfileScreen = () => {
-  const { user, logout } = useAuth();
+  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+  };
+
+  const updatePhoto = async (uri) => {
+    try {
+      const result = await dispatch(updateUserProfile({ photoURL: uri }));
+      if (updateUserProfile.fulfilled.match(result)) {
+        Alert.alert("Éxito", "Foto de perfil actualizada");
+      } else {
+        Alert.alert("Error", "No se pudo actualizar la foto");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Ocurrió un error al actualizar");
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled) {
+        updatePhoto(result.assets[0].uri);
+      }
+    } catch (_error) {
+      Alert.alert("Error", "No se pudo abrir la galería");
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert("Permiso denegado", "Se necesita acceso a la cámara");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled) {
+        updatePhoto(result.assets[0].uri);
+      }
+    } catch (_error) {
+      Alert.alert("Error", "No se pudo abrir la cámara");
+    }
+  };
+
+  const handleEditPhoto = () => {
+    Alert.alert("Cambiar Foto de Perfil", "Selecciona una opción", [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Galería", onPress: pickImage },
+      { text: "Cámara", onPress: takePhoto },
+    ]);
+  };
 
   if (!user) return null;
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Image source={{ uri: user.photoURL }} style={styles.avatar} />
-        <Text style={styles.name}>{user.displayName}</Text>
-        <Text style={styles.email}>{user.email}</Text>
+        <Text style={styles.title}>Mi Perfil</Text>
       </View>
 
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="shield-outline" color={COLORS.text} size={20} />
-          <Text style={styles.menuText}>Privacidad</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="settings-outline" color={COLORS.text} size={20} />
-          <Text style={styles.menuText}>Configuración</Text>
-        </TouchableOpacity>
-        <View style={styles.divider} />
-        <TouchableOpacity style={styles.menuItem} onPress={logout}>
-          <Ionicons name="log-out-outline" color={COLORS.primary} size={20} />
-          <Text style={[styles.menuText, { color: COLORS.primary }]}>
-            Cerrar Sesión
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.userInfo}>
+          <TouchableOpacity
+            onPress={handleEditPhoto}
+            style={styles.avatarContainer}
+          >
+            <Image
+              source={{
+                uri:
+                  user.photoURL ||
+                  "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400&auto=format&fit=crop&q=60",
+              }}
+              style={styles.avatar}
+            />
+            <View style={styles.editIconContainer}>
+              <Ionicons name="camera" size={20} color={COLORS.text} />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.username}>{user.displayName || "Usuario"}</Text>
+          <Text style={styles.email}>{user.email}</Text>
+        </View>
 
-      <View style={styles.footer}>
-        <Text style={TYPOGRAPHY.caption}>Movie Wiki v1.0.0</Text>
-        <Text style={TYPOGRAPHY.caption}>Powered by TMDB data (simulated)</Text>
-      </View>
-    </ScrollView>
+        <View style={styles.menu}>
+          {/* ... existing menu items ... */}
+          <TouchableOpacity style={styles.menuItem}>
+            <Ionicons name="settings-outline" color={COLORS.text} size={20} />
+            <Text style={styles.menuText}>Configuración</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem}>
+            <Ionicons
+              name="notifications-outline"
+              color={COLORS.text}
+              size={20}
+            />
+            <Text style={styles.menuText}>Notificaciones</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" color={COLORS.primary} size={20} />
+            <Text style={[styles.menuText, { color: COLORS.primary }]}>
+              Cerrar Sesión
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Movie Wiki v1.0.0</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -55,49 +152,58 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    paddingBottom: SPACING.xl,
+  },
   header: {
+    padding: SPACING.lg,
     alignItems: "center",
-    paddingVertical: SPACING.xl,
-    backgroundColor: COLORS.surface,
+  },
+  title: {
+    ...TYPOGRAPHY.header,
+  },
+  userInfo: {
+    alignItems: "center",
+    marginBottom: SPACING.xl,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
     marginBottom: SPACING.md,
-    borderWidth: 3,
-    borderColor: COLORS.active,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
-  name: {
+  username: {
     ...TYPOGRAPHY.subheader,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   email: {
-    ...TYPOGRAPHY.caption,
+    color: COLORS.lightGray,
+    fontSize: 14,
   },
-  section: {
-    marginTop: SPACING.lg,
-    paddingHorizontal: SPACING.md,
+  menu: {
+    paddingHorizontal: SPACING.lg,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: COLORS.card,
   },
   menuText: {
     color: COLORS.text,
-    fontSize: 16,
     marginLeft: SPACING.md,
-  },
-  divider: {
-    height: SPACING.lg,
+    fontSize: 16,
   },
   footer: {
-    alignItems: "center",
     marginTop: SPACING.xl,
-    paddingBottom: SPACING.xl,
+    alignItems: "center",
+  },
+  footerText: {
+    color: COLORS.gray,
+    fontSize: 12,
   },
 });
 

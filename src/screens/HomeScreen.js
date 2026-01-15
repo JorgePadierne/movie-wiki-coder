@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { MOCK_MOVIES, CATEGORIES } from "../data/mockData";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchMovies } from "../features/movies/moviesSlice";
+import { CATEGORIES } from "../data/mockData";
 import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
 
 const MovieCard = ({ movie, navigation }) => (
@@ -40,31 +43,52 @@ const CategoryRow = ({ title, movies, navigation }) => (
 );
 
 const HomeScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const { items: movies, loading } = useSelector((state) => state.movies);
+
+  useEffect(() => {
+    dispatch(fetchMovies());
+  }, [dispatch]);
+
+  if (loading && movies.length === 0) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const featuredMovie = movies[0];
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.hero}>
-        <Image
-          source={{ uri: MOCK_MOVIES[0].poster_path }}
-          style={styles.heroImage}
-        />
-        <View style={styles.heroOverlay}>
-          <Text style={styles.heroTitle}>
-            Destacado: {MOCK_MOVIES[0].title}
-          </Text>
-          <TouchableOpacity
-            style={styles.heroButton}
-            onPress={() =>
-              navigation.navigate("MovieDetail", { movie: MOCK_MOVIES[0] })
-            }
-          >
-            <Text style={styles.heroButtonText}>Ver Detalles</Text>
-          </TouchableOpacity>
+      {featuredMovie && (
+        <View style={styles.hero}>
+          <Image
+            source={{ uri: featuredMovie.poster_path }}
+            style={styles.heroImage}
+          />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>
+              Destacado: {featuredMovie.title}
+            </Text>
+            <TouchableOpacity
+              style={styles.heroButton}
+              onPress={() =>
+                navigation.navigate("MovieDetail", { movie: featuredMovie })
+              }
+            >
+              <Text style={styles.heroButtonText}>Ver Detalles</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       {CATEGORIES.map((category) => {
-        const filteredMovies = MOCK_MOVIES.filter(
-          (m) => m.genre_id === category
+        // Fallback to empty array if movies is undefined
+        const currentMovies = movies || [];
+        const filteredMovies = currentMovies.filter(
+          (m) => m.genre_id === category,
         );
         if (filteredMovies.length === 0) return null;
         return (
@@ -86,6 +110,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  center: {
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
   },
   hero: {
     height: 400,

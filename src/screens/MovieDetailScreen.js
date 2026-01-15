@@ -9,15 +9,25 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFavorites } from "../context/FavoritesContext";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleFavorite } from "../features/favorites/favoritesSlice";
 import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
 
 const { height } = Dimensions.get("window");
 
 const MovieDetailScreen = ({ route }) => {
   const { movie } = route.params;
-  const { toggleFavorite, isFavorite } = useFavorites();
-  const favorite = isFavorite(movie.id);
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const { items: favorites } = useSelector((state) => state.favorites);
+
+  const favorite = favorites.some(
+    (item) => item.id.toString() === movie.id.toString(),
+  );
+
+  const handleToggle = () => {
+    dispatch(toggleFavorite({ movie, userId: user?.uid }));
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -35,7 +45,7 @@ const MovieDetailScreen = ({ route }) => {
 
           <TouchableOpacity
             style={[styles.favButton, favorite && styles.favButtonActive]}
-            onPress={() => toggleFavorite(movie)}
+            onPress={handleToggle}
           >
             <Ionicons
               name={favorite ? "heart" : "heart-outline"}

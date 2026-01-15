@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,17 +7,26 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { useAuth } from "../context/AuthContext";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser } from "../features/auth/authSlice";
 import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, loading } = useAuth();
+
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (error) {
+      alert(error);
+    }
+  }, [error]);
 
   const handleLogin = async () => {
     if (!email || !password) return alert("Por favor llena todos los campos");
-    await login(email, password);
+    dispatch(loginUser({ email, password }));
   };
 
   return (
@@ -65,8 +74,6 @@ const LoginScreen = ({ navigation }) => {
           <Text style={{ color: COLORS.active }}>Regístrate</Text>
         </Text>
       </TouchableOpacity>
-
-      {/* Comentario para el futuro: Aquí insertar lógica de Firebase Auth */}
     </View>
   );
 };

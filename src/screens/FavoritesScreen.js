@@ -7,11 +7,11 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useFavorites } from "../context/FavoritesContext";
-import { COLORS, SPACING, TYPOGRAPHY } from "../theme/theme";
+import { useSelector } from "react-redux";
+import { COLORS, SPACING } from "../theme/theme";
 
 const FavoritesScreen = ({ navigation }) => {
-  const { favorites } = useFavorites();
+  const { items: favorites } = useSelector((state) => state.favorites);
 
   return (
     <View style={styles.container}>
